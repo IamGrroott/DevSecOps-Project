@@ -186,7 +186,6 @@ Create a Jenkins webhook
 1. **Configure CI/CD Pipeline in Jenkins:**
 - Create a CI/CD pipeline in Jenkins to automate your application deployment.
 
-```groovy
 pipeline {
     agent any
     tools {
@@ -204,18 +203,28 @@ pipeline {
         }
         stage('Checkout from Git') {
             steps {
-                git branch: 'main', url: 'https://github.com/N4si/DevSecOps-Project.git'
+                git branch: 'main', url: 'https://github.com/IamGrroott/DevSecOps-Project.git'
             }
         }
         stage("Sonarqube Analysis") {
             steps {
-                withSonarQubeEnv('sonar-server') {
-                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Netflix \
-                    -Dsonar.projectKey=Netflix'''
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    def sonarToken = credentials('sonar-token')  // Replace 'Sonar-token' with your actual credentialsId
+
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        withEnv(["PATH+SCANNER=${scannerHome}/bin"]) {
+                            sh """
+                                sonar-scanner -Dsonar.projectName=Netflix \
+                                              -Dsonar.projectKey=Netflix \
+                                              -Dsonar.login=${SONAR_TOKEN}
+                            """
+                        }
+                    }
                 }
             }
         }
-        stage("quality gate") {
+        stage("Quality Gate") {
             steps {
                 script {
                     waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
@@ -224,12 +233,12 @@ pipeline {
         }
         stage('Install Dependencies') {
             steps {
-                sh "npm install"
+                sh 'npm install'
             }
         }
     }
 }
-```
+
 
 Certainly, here are the instructions without step numbers:
 
