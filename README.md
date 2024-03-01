@@ -206,38 +206,36 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/IamGrroott/DevSecOps-Project.git'
             }
         }
-        stage("Sonarqube Analysis") {
+        stage('Sonarqube Analysis') {
             steps {
                 script {
                     def scannerHome = tool 'sonar-scanner'
-                    def sonarToken = credentials('sonar-token')  // Replace 'Sonar-token' with your actual credentialsId
-
-                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('sonar-server') {
                         withEnv(["PATH+SCANNER=${scannerHome}/bin"]) {
                             sh """
                                 sonar-scanner -Dsonar.projectName=Netflix \
-                                              -Dsonar.projectKey=Netflix \
-                                              -Dsonar.login=${SONAR_TOKEN}
+                                              -Dsonar.projectKey=Netflix
                             """
                         }
                     }
                 }
             }
         }
-        stage("Quality Gate") {
+        stage('Quality Gate') {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
                 }
             }
         }
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                sh "npm install"
             }
         }
     }
 }
+
 
 
 Certainly, here are the instructions without step numbers:
