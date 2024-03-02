@@ -304,18 +304,26 @@ pipeline{
                 git branch: 'main', url: 'https://github.com/N4si/DevSecOps-Project.git'
             }
         }
-        stage("Sonarqube Analysis "){
-            steps{
-                withSonarQubeEnv('sonar-server') {
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Netflix \
-                    -Dsonar.projectKey=Netflix '''
+        stage('Sonarqube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withSonarQubeEnv('sonar-server') {
+                        withEnv(["PATH+SCANNER=${scannerHome}/bin"]) {
+                            sh """
+                                sonar-scanner -Dsonar.projectName=Netflix \
+                                              -Dsonar.projectKey=Netflix
+                            """
+                        }
+                    }
                 }
             }
-        }
+        }    
+
         stage("quality gate"){
            steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token' 
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
                 }
             } 
         }
@@ -348,12 +356,12 @@ pipeline{
             }
              stage("TRIVY"){
             steps{
-                sh "trivy image nasi101/netflix:latest > trivyimage.txt" 
+                sh "trivy image Ashu@25896/netflix:latest > trivyimage.txt" 
             }
         }
         stage('Deploy to container'){
             steps{
-                sh 'docker run -d --name netflix -p 8081:80 nasi101/netflix:latest'
+                sh 'docker run -d --name netflix -p 8081:80 Ashu@25896/netflix:latest'
             }
         }
     }
