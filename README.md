@@ -346,15 +346,7 @@ pipeline{
                     sh "docker push Aashu82/netflix:latest"
                 }
             }
-        }
-    }
-}
-
-                    }
-                }
-            }
-        }
-        stage("TRIVY"){
+             stage("TRIVY"){
             steps{
                 sh "trivy image nasi101/netflix:latest > trivyimage.txt" 
             }
@@ -367,6 +359,7 @@ pipeline{
     }
 }
 
+       
 
 If you get docker login failed errorr
 
