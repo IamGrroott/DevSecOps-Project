@@ -335,13 +335,21 @@ pipeline{
                 sh "trivy fs . > trivyfs.txt"
             }
         }
-        stage("Docker Build & Push"){
-            steps{
-                script{
-                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
-                       sh "docker build --build-arg TMDB_V3_API_KEY=<yourapikey> -t netflix ."
-                       sh "docker tag netflix nasi101/netflix:latest "
-                       sh "docker push nasi101/netflix:latest "
+        stage("Docker Build & Push") {
+    steps {
+        script {
+            withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                withDockerRegistry(url: "https://registry-1.docker.io/v2/", credentialsId: 'docker') {
+                    sh "docker build --build-arg TMDB_V3_API_KEY=8dea9ea755290171712550a1b011dd25 -t netflix ."
+                    sh "docker tag netflix Aashu82/netflix:latest"
+                    sh "echo \${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin https://registry-1.docker.io/v2/"
+                    sh "docker push Aashu82/netflix:latest"
+                }
+            }
+        }
+    }
+}
+
                     }
                 }
             }
