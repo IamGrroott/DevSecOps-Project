@@ -284,49 +284,53 @@ Now, you have installed the Dependency-Check plugin, configured the tool, and ad
 
 ```groovy
 
-pipeline{
+pipeline {
     agent any
-    tools{
+    tools {
         jdk 'jdk17'
         nodejs 'node16'
     }
+
     environment {
-        SCANNER_HOME=tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
     }
+
     stages {
-        stage('clean workspace'){
-            steps{
+        stage('Clean Workspace') {
+            steps {
                 cleanWs()
             }
         }
-        stage('Checkout from Git'){
-            steps{
-                git branch: 'main', url: 'https://github.com/N4si/DevSecOps-Project.git'
+
+        stage('Checkout from Git') {
+            steps {
+                git branch: 'main', url: 'https://github.com/IamGrroott/DevSecOps-Project.git'
             }
         }
-        stage('Sonarqube Analysis') {
+
+        stage('SonarQube Analysis') {
             steps {
                 script {
-                    def scannerHome = tool 'sonar-scanner'
                     withSonarQubeEnv('sonar-server') {
-                        withEnv(["PATH+SCANNER=${scannerHome}/bin"]) {
+                        withEnv(["PATH+SCANNER=${SCANNER_HOME}/bin"]) {
                             sh """
-                                sonar-scanner -Dsonar.projectName=Netflix \
-                                              -Dsonar.projectKey=Netflix
+                                sonar-scanner -Dsonar.projectName=netflix-clone \
+                                              -Dsonar.projectKey=netflix-clone \
                             """
                         }
                     }
                 }
             }
-        }    
-
-        stage("quality gate"){
-           steps {
-                script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
-                }
-            } 
         }
+
+        stage("Quality Gate") {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh "npm install"
@@ -336,36 +340,40 @@ pipeline{
             steps {
                 dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
                 dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
+            }    
         }
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
-            }
+            }    
         }
+
         stage("Docker Build & Push") {
-    steps {
-        script {
-            withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                withDockerRegistry(url: "https://registry-1.docker.io/v2/", credentialsId: 'docker') {
-                    sh "docker build --build-arg TMDB_V3_API_KEY=8dea9ea755290171712550a1b011dd25 -t netflix ."
-                    sh "docker tag netflix Aashu82/netflix:latest"
-                    sh "echo \${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin https://registry-1.docker.io/v2/"
-                    sh "docker push Aashu82/netflix:latest"
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker', toolName: 'docker') {
+                        sh "docker build --build-arg TMDB_V3_API_KEY=8dea9ea755290171712550a1b011dd25 -t netflix ."
+                        sh "docker tag netflix aashu82/netflix:latest"
+                        sh "docker push aashu82/netflix:latest"
+                    }
                 }
             }
-             stage("TRIVY"){
-            steps{
-                sh "trivy image Ashu@25896/netflix:latest > trivyimage.txt" 
+        }
+
+        stage('TRIVY') {
+            steps {
+                sh "trivy image aashu82/netflix:latest > trivyimage.txt"
             }
         }
-        stage('Deploy to container'){
-            steps{
-                sh 'docker run -d --name netflix -p 8081:80 Ashu@25896/netflix:latest'
+
+        stage('Deploy to container') {
+            steps {
+                sh 'docker run -d --name netflix -p 8081:80 aashu82/netflix:latest'
             }
         }
     }
 }
+
 
        
 
